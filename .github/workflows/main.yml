@@ -1,0 +1,63 @@
+name: Build driver
+on:
+  push:
+    branches: [ main ]
+    tags:
+      - 'v*'
+  pull_request:
+    branches: [ main ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+
+    name: "Build Outreach Pi image"
+    steps:
+    - uses: actions/checkout@v4.1.7
+      with:
+        fetch-depth: 0
+    - name: Fetch tags
+      run: git fetch --tags --force
+
+    - uses: pguyot/arm-runner-action@HEAD
+      id: install_deps
+      with:
+        image_additional_mb: 1500
+        bind_mount_repository: true
+        base_image: https://downloads.raspberrypi.com/raspios_full_armhf/images/raspios_full_armhf-2025-10-02/2025-10-01-raspios-trixie-armhf-full.img.xz
+        commands: |
+          chmod +x install.sh
+          install.sh
+
+    - name: Compress built image
+      run: |
+        mv ${{ steps.install_deps.outputs.image }} outreach_image.img
+        sudo xz -T 0 -v outreach_image.img
+
+    - uses: actions/upload-artifact@v4.3.4
+      with:
+        name: outreach_image.img.xz
+        path: outreach_image.img.xz
+        if-no-files-found: error
+        retention-days: 1
+
+  release:
+    needs: [build]
+    runs-on: ubuntu-24.04
+    steps:
+      # Download literally every single artifact
+      - uses: actions/download-artifact@v4.1.8
+      - run: find
+      # Push to dev release
+      - uses: pyTooling/Actions/releaser@v1.0.5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag: 'Dev'
+          rm: true
+          files: |
+            **/*.xz
+        if: github.event_name == 'push'

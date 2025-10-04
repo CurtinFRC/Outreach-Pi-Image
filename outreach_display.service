@@ -1,0 +1,13 @@
+[Unit]
+Description=Outreach Slideshow
+After=graphical.target # Or multi-user.target if you don't use a full graphical environment
+
+[Service]
+Type=simple
+User=your_username # Replace with the user that owns the images and has permissions to the framebuffer
+ExecStart=/opt/outreach/display_images.sh
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=graphical.target # Or multi-user.target
