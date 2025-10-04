@@ -31,7 +31,7 @@ jobs:
         base_image: https://downloads.raspberrypi.com/raspios_full_armhf/images/raspios_full_armhf-2025-10-02/2025-10-01-raspios-trixie-armhf-full.img.xz
         commands: |
           chmod +x install.sh
-          install.sh
+          ./install.sh
 
     - name: Compress built image
       run: |
